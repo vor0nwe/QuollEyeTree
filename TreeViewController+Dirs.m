@@ -3,7 +3,7 @@
 //  QuollEyeTree
 //
 //  Created by Ian Binnie on 2/10/11.
-//  Copyright 2011-2013 Ian Binnie. All rights reserved.
+//  Copyright 2011-2015 Ian Binnie. All rights reserved.
 //
 
 #import "TreeViewController+Dirs.h"
@@ -17,6 +17,7 @@
 #import "FolderPanelController.h"
 #import "ComparePanelController.h"
 #import "DeletedItems.h"
+extern NSImage *aliasBadge;
 
 @interface TreeViewController()
 - (void)setDirMenu;
@@ -387,7 +388,9 @@ void getAllMatching(DirectoryItem *source, DirectoryItem *target, NSMutableArray
 	}];
 }
 - (void)expandDir:(id)item {
+//	NSLog(@"expandDir %@", [(DirectoryItem *)item loggedSubDirectories]);
 	if ([item isDirPlus1Loaded])	return;	// already Loaded
+//	NSLog(@"Not Loaded");
 	[self runBlockOnQueue:^{
 		[item logDirPlus1];
 		[[NSOperationQueue mainQueue] addOperationWithBlock:^{
@@ -405,6 +408,7 @@ void getAllMatching(DirectoryItem *source, DirectoryItem *target, NSMutableArray
 		return YES;
 	}
 	if (character == NSF3FunctionKey) {
+		[self.selectedDir updateDirectory];
 		[self updateBranchInQueue:self.selectedDir];
 		return YES;
 	}
@@ -502,7 +506,19 @@ void getAllMatching(DirectoryItem *source, DirectoryItem *target, NSMutableArray
 	if ([[tableColumn identifier] isEqualToString:COLUMNID_NAME]) {
 		if ([cell isKindOfClass:[ImageAndTextCell class]]) {
 			if(![item nodeIcon]) {
-				[item setNodeIcon:[[NSWorkspace sharedWorkspace] iconForFile:[item fullPath]]];
+				NSImage *fileIcon = [[NSWorkspace sharedWorkspace] iconForFile:[item fullPath]];
+				[item setNodeIcon:fileIcon];
+				if([item isAlias]) {	// Check for alias
+					if ([NSImage respondsToSelector:@selector(imageWithSize:flipped:drawingHandler:)]) {
+						NSImage *badgedFileIcon = [NSImage imageWithSize:fileIcon.size flipped:NO
+														  drawingHandler:^BOOL (NSRect dstRect){
+															  [fileIcon drawAtPoint:dstRect.origin fromRect:NSZeroRect operation:NSCompositeSourceOver fraction:1];
+															  [aliasBadge drawAtPoint:dstRect.origin fromRect:NSZeroRect operation:NSCompositeSourceOver fraction:1];
+															  return YES;
+														  }];
+						[item setNodeIcon:badgedFileIcon];
+					}
+				}
 			}
 			[(ImageAndTextCell*)cell setImage:[item nodeIcon]];	// set the cell's image
 		}
@@ -534,7 +550,8 @@ void getAllMatching(DirectoryItem *source, DirectoryItem *target, NSMutableArray
 }
 
 - (BOOL)outlineView:(NSOutlineView *)outlineView isItemExpandable:(id)item {
-    return (item == nil) ? YES : ([item numberOfSubDirs] != 0);
+//    return (item == nil) ? YES : ([item numberOfSubDirs] != 0);
+	return (item == nil) ? YES : [(DirectoryItem *)item isDirectoryExpandable];
 }
 
 - (id)outlineView:(NSOutlineView *)outlineView child:(NSInteger)index ofItem:(id)item {

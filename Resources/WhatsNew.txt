@@ -1,5 +1,35 @@
 What's new since 1.0
 
+Version 2.06 2016-11-26
+- fixed Rename/Copy/Move did not allow adjacent Delete Chracters '/'
+- added	Rename retain mask
+
+
+Version 2.05 2016-05-22
+- added Batch command
+- changed logging to enhance responsiveness
+- added	Internal documentation
+- changed Refresh to NSOperationQueue
+- added	PREVIOUS_RELEASE FOR pre 10.9 to Target QuollEyeTree2
+
+Version 2.04 2015-03-30
+- fixed View Branch followed by View File corrupted display (since 2.02)
+- added tagged File Delete, immediate (do not move to Trash)
+
+Version 2.03 2014-12-22
+- added Option for Directory and Files side by side
+- added arrow on icon of symlinks (OSX 10.8 or later)
+
+Version 2.02 2014-12-07
+- fixed Directory shading print through in TextView on Yosemite
+- added Delete Chracter '/' to Rename/Copy/Move
+- added Go Back to previous tab content (removed 2014-10-08)
+- fixed F3 refresh Branch did not refresh Dir contents
+
+Version 2.01 2014-02-09
+- added Edit File commands
+- fixed compositeToPoint deprecated
+
 Version 2.0 2014-01-02
 - added Services Menu
 

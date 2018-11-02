@@ -10,7 +10,6 @@
 extern NSArray *fileSortDescriptor;
 
 @interface DirectoryItem()
-- (void)loadSubDirectories;
 - (BOOL)isLeafNode;
 @end
 
@@ -62,7 +61,7 @@ void logSubDirectoriesInBranch (DirectoryItem *source, NSMutableSet **accumulate
 	}
 }
 - (void)logBranch {	// log all subdirectories in Branch
-	NSMutableSet *accumulated = [NSMutableSet setWithCapacity:100];
+	NSMutableSet *accumulated = [NSMutableSet setWithCapacity:1000];
 	logSubDirectoriesInBranch(self, &accumulated);
 }
 - (void)updateBranch {

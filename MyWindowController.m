@@ -57,7 +57,7 @@ NSOperationQueue *loggingQueue = nil;
 - (void)removeTabWithDirectory:(NSString *)directory  {
 	NSArray *arrangedTabs = [tabViewBar arrangedTabs];
 
-	NSIndexSet *tabs = [arrangedTabs indexesOfObjectsPassingTest:^(id tab, NSUInteger index, BOOL *stop) {
+	NSIndexSet *tabsWithDirectory = [arrangedTabs indexesOfObjectsPassingTest:^(id tab, NSUInteger index, BOOL *stop) {
 		TreeViewController *tvcInTab = [viewMap objectForKey:tab];
 		if ([[[tvcInTab treeRootNode] fullPath] isEqualToString:directory]) return YES;	// directory is in tab
 		return NO;
@@ -65,9 +65,9 @@ NSOperationQueue *loggingQueue = nil;
 
 	// Need to ensure that we don't remove last tab
 	NSMutableIndexSet *tabsToRemove = [NSMutableIndexSet new];
-	[tabsToRemove addIndexes:tabs];
-	if([tabs count] == [tabViewBar numberOfTabs]) {
-		NSUInteger tabToKeep = [tabs firstIndex];
+	[tabsToRemove addIndexes:tabsWithDirectory];
+	if([tabsWithDirectory count] == [tabViewBar numberOfTabs]) {
+		NSUInteger tabToKeep = [tabsWithDirectory firstIndex];
 		[tabsToRemove removeIndex:tabToKeep];
 		TreeViewController *tvcInTab = [viewMap objectForKey:[arrangedTabs objectAtIndex:tabToKeep]];
 		[tvcInTab setTreeRootNode:getDefaultDirectory()];	// replace with default Directory
@@ -109,8 +109,7 @@ NSOperationQueue *loggingQueue = nil;
                 @"Utilities",
                 nil];
     NSUInteger index = 0;
-    for (NSString *place in goPlaces)
-    {
+    for (NSString *place in goPlaces) {
         item = [goMenu insertItemWithTitle:[[NSFileManager defaultManager] displayNameAtPath:place] action:@selector(goToPlace:) keyEquivalent:@"" atIndex:index];
         [item setTarget:self];
         iconImage = [pathHelper iconForName:place];
@@ -178,9 +177,10 @@ NSOperationQueue *loggingQueue = nil;
 	return self;
 }
 
+/*! @brief This method receives Automator Action QETNotification (sent by OpeninQuollEyeTree
+ */
 - (void)doAutomatorAction:(NSNotification *)notification {
     id dir = [[notification userInfo] valueForKey:@"Directory"];
-//	NSLog(@"%@", dir);
     NSString *path = [dir objectAtIndex:0];
     [self selectDirectory:path inTab:YES];
 }
@@ -245,6 +245,11 @@ NSOperationQueue *loggingQueue = nil;
             return NO;
         [menuItem setState:[currentDir showDotted] ? NSOnState : NSOffState];
         return YES;
+	}
+	if (action == @selector(goBack:)) {
+        if(previousTvc)
+            return YES;
+        return NO;
 	}
     return YES;
 }
@@ -364,21 +369,18 @@ NSOperationQueue *loggingQueue = nil;
 	return [tabViewBar indexOfTab:[tabViewBar selectedTab]];
 }
 - (void)selectDirectory:(NSString *)directory inTab:(BOOL)inTab {
-//	[loggingQueue addOperationWithBlock:^{
-//		[self pauseMonitoring:YES];
-//		DirectoryItem *userDir = locateOrAddDirectoryInVolumes(directory);
-//		if (userDir) {
-//			[[NSOperationQueue mainQueue] addOperationWithBlock:^{
-//				if (inTab)  [self newTabWithDir:userDir];
-//				else    [currentTvc setTreeRootNode:userDir];
-//			}];
-//		}
-//		[self pauseMonitoring:NO];
-//	}];
 	DirectoryItem *userDir = locateOrAddDirectoryInVolumes(directory);
     if (userDir) {
 		if (inTab)  [self newTabWithDir:userDir];
 		else    [currentTvc setTreeRootNode:userDir];
+// Following removed 2014-10-08 (problem with Go Back)
+//		else {	// create new TreeViewController with directory and replace in view
+//			previousTvc = currentTvc;
+////			TreeViewController *tvcNew = [self newTreeViewControllerAtDir:userDir];
+////			[self changeSelection:tvcNew];	// replace TVC in view
+//			[self changeSelection:[self newTreeViewControllerAtDir:userDir]];	// replace TVC in view
+//			[(SFDefaultTab *)[tabViewBar selectedTab] setRepresentedObject:[NSDictionary dictionaryWithObject:[userDir relativePath] forKey:@"name"]];
+//		}
     }
 }
 #pragma mark SidebarViewController Delegate Methods
@@ -423,6 +425,7 @@ NSOperationQueue *loggingQueue = nil;
 }
 - (IBAction)privateTest:(id)sender {
 	NSLog(@"privateTest");
+	NSLog(@"Map Entries %lu", (unsigned long)NSCountMapTable(viewMap));
 //	[self sidebarViewController:sidebarController shouldRemoveVolume:@"/Volumes/TSB USB DRV"];
 }
 - (IBAction)toggleMark:(id)sender {
@@ -533,12 +536,24 @@ NSOperationQueue *loggingQueue = nil;
 - (IBAction)addNewTabAt:(id)sender {
 	[self newTabWithDir:[currentTvc selectedDir]];
 }
+- (IBAction)toggleView:(id)sender {
+//	NSLog(@"toggleView");
+	[currentTvc toggleView];
+}
 - (IBAction)gotoDir:(id)sender {
 	GoToPanelController *gotoPanel = [GoToPanelController new];
 	if ([gotoPanel runModal] == NSOKButton) {
+//	if ([gotoPanel runModal] == NSModalResponseOK) {
 		NSString *newDir = [[gotoPanel directory] stringByExpandingTildeInPath];
         [self selectDirectory:newDir inTab:NO];
     }
+}
+- (IBAction)goBack:(id)sender {
+	if(previousTvc) {
+		[self changeSelection:previousTvc];	// replace TVC in view
+		[(SFDefaultTab *)[tabViewBar selectedTab] setRepresentedObject:[NSDictionary dictionaryWithObject:[previousTvc.selectedDir relativePath] forKey:@"name"]];
+		previousTvc = nil;
+	}
 }
 
 @end

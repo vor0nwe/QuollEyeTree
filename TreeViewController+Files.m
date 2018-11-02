@@ -41,6 +41,7 @@ extern NSPredicate *notEmptyPredicate;
 - (void)copyTaggedTo:(NSArray *)objectsToCopy;
 - (void)moveTaggedTo:(NSArray *)objectsToCopy;
 - (void)renameTaggedTo:(NSArray *)objects;
+- (void)batchForTagged:(NSArray *)objectsToCopy;
 - (void)symlinkTo:(FileSystemItem *)node;
 @end
 
@@ -94,8 +95,11 @@ extern NSPredicate *notEmptyPredicate;
         }
     }
 }
+- (NSArray *)taggedFiles {
+	return[[self.arrayController arrangedObjects] filteredArrayUsingPredicate:tagPredicate];
+}
 - (void)searchTagged {
-    NSArray *objectsToSearch = [[self.arrayController arrangedObjects] filteredArrayUsingPredicate:tagPredicate];
+	NSArray *objectsToSearch = self.taggedFiles;
 	SearchPanelController *searchPanel = [SearchPanelController singleton];
     NSUInteger noObjects = [objectsToSearch count];
 	if ([searchPanel runModal] == NSOKButton) {
@@ -155,8 +159,7 @@ extern NSPredicate *notEmptyPredicate;
     [self copyTo:node];
 }
 - (void)copyTaggedFilesTo {
-	NSArray *objectsToCopy = [[self.arrayController arrangedObjects] filteredArrayUsingPredicate:tagPredicate];
-	[self copyTaggedTo:objectsToCopy];
+	[self copyTaggedTo:self.taggedFiles];
 }
 - (void)moveFileTo {
     FileItem *node = [self selectedFile];
@@ -173,8 +176,11 @@ extern NSPredicate *notEmptyPredicate;
     [self renameTo:node];
 }
 - (void)renameTaggedFilesTo {
-	NSArray *objectsToRename = [[self.arrayController arrangedObjects] filteredArrayUsingPredicate:tagPredicate];
-	[self renameTaggedTo:objectsToRename];
+	[self renameTaggedTo:self.taggedFiles];
+}
+// New 2015-06-19
+- (void)batchForTaggedFiles {
+	[self batchForTagged:self.taggedFiles];
 }
 - (void)moveTaggedToTrash {
 	NSArray *taggedContents = [[self.arrayController arrangedObjects] filteredArrayUsingPredicate:tagPredicate];
@@ -227,31 +233,67 @@ extern NSPredicate *notEmptyPredicate;
     return YES;
 }
 
+// 2015-03-14 New delete - no Trash
+- (void)deleteTagged {
+	NSArray *taggedContents = [[self.arrayController arrangedObjects] filteredArrayUsingPredicate:tagPredicate];
+	NSString *prompt = [NSString stringWithFormat:@"Warning: This will permanently delete \"%lu\" files.", [taggedContents count]];
+	NSAlert *permremove = [NSAlert new];
+	[permremove setMessageText:prompt];
+	[permremove setAlertStyle:NSWarningAlertStyle];
+	[permremove addButtonWithTitle:@"Continue"];
+	[permremove addButtonWithTitle:@"Stop"];
+	NSInteger result = [permremove runModal];
+	if(result != NSAlertFirstButtonReturn) {
+		return;
+	}
+	[self.delegate treeViewController:self pauseRefresh:YES];
+	NSError *error = nil;
+	NSFileManager *fileManager = [NSFileManager new];
+	for (FileItem *node in taggedContents) {
+		if([fileManager removeItemAtPath:node.fullPath error:&error]) {
+			if (inBranch) {
+				NSMutableArray *files = [(DirectoryItem *)[node parent] files];
+				[files removeObject:node];
+			}
+			[self.filesInDir removeObject:node];
+			[self.arrayController rearrangeObjects];
+		} else {
+		 NSAlert *alert = [NSAlert alertWithError:error];
+		 [alert runModal];
+		}
+	}
+	[self.delegate treeViewController:self pauseRefresh:NO];
+}
+
 - (void)moveToTrash {
 	NSArray *selection = [self.arrayController selectedObjects];
 	if ([selection count] == 1) {
 		__block FileItem *node = [selection objectAtIndex:0];
         if (![self checkFileLocked:node])   return;
-		NSArray *filesToDelete = [NSArray arrayWithObject:node.url];
+// 2015-03-13 test delete 10.8 or later
+		NSURL *deletedURL;
+		NSError *error;
 		[self.delegate treeViewController:self pauseRefresh:YES];
-		[[NSWorkspace sharedWorkspace] recycleURLs:filesToDelete
-								 completionHandler:^(NSDictionary *newURLs, NSError *error) {
-									 if (error == nil) {
-                                         [[DeletedItems sharedDeletedItems] addWithPath:node.fullPath trashLocation:[[newURLs objectForKey:node.url] path]];
-										 if (inBranch) {
-											 NSMutableArray *files = [(DirectoryItem *)[node parent] files];
-											 [files removeObject:node];
-										 }
-										 [self.filesInDir removeObject:node];
-										 [self.arrayController rearrangeObjects];
-                                         node = NULL;
-									 }
-									 else {
-										 NSAlert *alert = [NSAlert alertWithError:error];
-										 [alert runModal];
-									 }
-									 [self.delegate treeViewController:self pauseRefresh:NO];
-								 } ];
+		[[NSFileManager defaultManager] trashItemAtURL:node.url
+									  resultingItemURL:&deletedURL
+												 error:&error];
+		if (error == nil) {
+			[[DeletedItems sharedDeletedItems] addWithPath:node.fullPath
+											 trashLocation:deletedURL.path];
+			if (inBranch) {
+				NSMutableArray *files = [(DirectoryItem *)[node parent] files];
+				[files removeObject:node];
+			}
+			[self.filesInDir removeObject:node];
+			[self.arrayController rearrangeObjects];
+			node = NULL;
+		}
+		else {
+			NSAlert *alert = [NSAlert alertWithError:error];
+			[alert runModal];
+		}
+		[self.delegate treeViewController:self pauseRefresh:NO];
+
 	}
 }
 - (void)updateTargetNames:(id)sender target:(id)panel {
@@ -345,6 +387,18 @@ extern NSPredicate *notEmptyPredicate;
 - (void)compareFile {
 	[self compareTo:[self selectedFile]];
 }
+- (void)editFile {
+	if(![[NSWorkspace sharedWorkspace] openFile:[[self selectedFile] fullPath]
+								withApplication:[[NSUserDefaults standardUserDefaults] stringForKey:PREF_EDIT_COMMAND]])
+		[self postStatusMessage:@"unable to open file"];
+}
+- (void)editTaggedFiles {
+	for (FileItem *node in self.taggedFiles) {
+		if(![[NSWorkspace sharedWorkspace] openFile:node.fullPath
+									withApplication:[[NSUserDefaults standardUserDefaults] stringForKey:PREF_EDIT_COMMAND]])
+			[self postStatusMessage:@"unable to open file"];
+	}
+}
 
 #pragma mark - Text Viewer
 - (void)showFileInViewer {
@@ -360,6 +414,7 @@ extern NSPredicate *notEmptyPredicate;
     textViewer = [[TextViewerController alloc]
                 initWithNibName:@"TextView"
                 bundle:nil];
+	[self.splitViewTop setHidden:YES];	// 2014-12-07 kludge to prevent Directory shading print through in Yosemite
     [[self view] addSubview:[textViewer view]];	// embed new TextView in our host view
     [[textViewer view] setFrame:[[self view] bounds]];	// resize the controller's view to the host size
     textViewer.delegate = self;
@@ -369,6 +424,9 @@ extern NSPredicate *notEmptyPredicate;
 - (void)exitFileViewer {
     [textViewer.view removeFromSuperview];
     textViewer = nil;
+//	[self.splitViewTop setHidden:NO];	// 2014-12-07 restore Directory view
+	[self.splitViewTop setHidden:self->inBranch];	// 2015-03-30 restore Directory view (fix for Branch View)
+
     [self.fileList.window makeFirstResponder:self.fileList];
 }
 
@@ -569,6 +627,7 @@ extern NSPredicate *notEmptyPredicate;
 		[self setFileMenu];
 	}
 }
+// Most keys are set in MainWindow.xib and dispatched via MyWindowController+FileMenu
 - (BOOL)keyPressedInTableView:(unichar)character {
 	if (character == 0x1b) {
 		if(filesInBranch) {
@@ -622,6 +681,10 @@ extern NSPredicate *notEmptyPredicate;
         [self viewFiles:[[self.arrayController arrangedObjects] filteredArrayUsingPredicate:tagPredicate]];
 		return YES;
 	}
+//	if (character == 'b') {
+//		[self batchForTaggedFiles];
+//		return YES;
+//	}
 	return NO;
 }
 - (void)validateTableContextMenu:(NSMenu *)menu {
@@ -670,6 +733,7 @@ extern NSPredicate *notEmptyPredicate;
 				}
 			[(ImageAndTextCell*)cell setImage:[node nodeIcon]];	// set the cell's image
 		}
+//		[cell setTextColor:[NSColor blueColor]];
 	}
 }
 - (BOOL)tableView:(NSTableView *)tableView shouldReorderColumn:(NSInteger)columnIndex toColumn:(NSInteger)newColumnIndex {

@@ -11,9 +11,33 @@
 #import "volume.h"
 #import "alias.h"
 #import "folderSize.h"
+#import "volumeForPath.h"
 
+@interface DirectoryItem ()
+/*! @brief	This is the main (private) method to read the contents of a directory.
+ @param	dirPath	directory
+ @internal
+ @return	array of URL.
+ */
+- (NSArray *)readDirectory:(NSString *)dirPath error:(NSError **)error;
+/*!	@brief	This private method creates File and SubDirectory detail.
+ @internal
+ @param  arrayUrl array of URL
+ */
+- (void)setFileAndDirDetails:(NSArray *)arrayUrl;
+/*!	@brief	This private method populates all the subdirectories and files in a directory
+ @internal
+ @discussion	If alias or symbolic link copies target subdirectories and files (and loads if necessary)
+ */
+- (void)loadSubDirectories;
+/*!	This private method look for dirName in subDirectories
+ @internal
+ @param  dirName directory name
+ @return DirectoryItem (if found) or nil
+ */
+- (DirectoryItem *)findDir:(NSString *)dirName;
+@end
 @implementation DirectoryItem
-
 @synthesize files=_files, loggedSubDirectories=_subDirectories;
 
 static NSMutableArray *leafNode = nil;
@@ -30,23 +54,20 @@ static NSArray *properties = nil;
 	showHiddenFiles = [[NSUserDefaults standardUserDefaults] boolForKey:PREF_HIDDEN_FILES];
 }
 + (void)initialize {
-    if (self == [DirectoryItem class]) {
-        leafNode = [[NSMutableArray alloc] init];
-		[self loadPreferences];
-        properties = [NSArray arrayWithObjects:
-                      NSURLNameKey,
-                      NSURLFileSizeKey, NSURLIsAliasFileKey, NSURLIsPackageKey,
-                      NSURLIsDirectoryKey, NSURLIsSymbolicLinkKey, NSURLIsRegularFileKey,
-                      NSURLCreationDateKey, NSURLContentModificationDateKey,
-                      NSURLLocalizedTypeDescriptionKey, nil];
-		dirSortDescriptor = [NSArray arrayWithObject:
-                             [[NSSortDescriptor alloc] initWithKey:COLUMNID_NAME
-                                                         ascending:YES
-                                                          selector:@selector(localizedStandardCompare:)]];
-    }
+	leafNode = [[NSMutableArray alloc] init];
+	[self loadPreferences];
+	properties = [NSArray arrayWithObjects:
+				  NSURLNameKey,
+				  NSURLFileSizeKey, NSURLIsAliasFileKey, NSURLIsPackageKey,
+				  NSURLIsDirectoryKey, NSURLIsSymbolicLinkKey, NSURLIsRegularFileKey,
+				  NSURLCreationDateKey, NSURLContentModificationDateKey,
+				  NSURLLocalizedTypeDescriptionKey, nil];
+	dirSortDescriptor = [NSArray arrayWithObject:
+						 [[NSSortDescriptor alloc] initWithKey:COLUMNID_NAME
+													 ascending:YES
+													  selector:@selector(localizedStandardCompare:)]];
 }
 
-// This method returns the top DirectoryItem in the tree, but NOT any enclosing VolumeItem
 - (DirectoryItem *)rootDir {
 	if (parent == nil) return self;
 	if([parent isKindOfClass:[DirectoryItem class]]) {
@@ -70,24 +91,23 @@ static NSArray *properties = nil;
 	return _subDirectories == leafNode;
 }
 
-// This is the main routine to read the contents of a directory (into array of URL)
-- (NSArray *)readDirectory:(NSString *)path error:(NSError **)error {
-	NSURL *url = [NSURL fileURLWithPath:path isDirectory:YES];
+- (NSArray *)readDirectory:(NSString *)dirPath error:(NSError **)error {
+	NSURL *url = [NSURL fileURLWithPath:dirPath isDirectory:YES];
 	NSArray *array = [[NSFileManager new]
 					  contentsOfDirectoryAtURL:url
 					  includingPropertiesForKeys:properties
 					  options:(NSDirectoryEnumerationSkipsPackageDescendants |
 							   ((showHiddenFiles | unHideDir| unHideAllDir) ? 0 : NSDirectoryEnumerationSkipsHiddenFiles))
 					  error:error];
-    if (unHideDir) {
-        NSIndexSet *unDotted = [array indexesOfObjectsPassingTest:^(id obj, NSUInteger index, BOOL *stop) {
-            NSString *name;
-            [obj getResourceValue:&name forKey:NSURLNameKey error:nil];
-            if ([name characterAtIndex:0] == '.')	return NO;	// exclude .files
-            return YES;
-        }];
-        return [array objectsAtIndexes:unDotted];
-    }
+	if (unHideDir) {
+		NSIndexSet *unDotted = [array indexesOfObjectsPassingTest:^(id obj, NSUInteger index, BOOL *stop) {
+			NSString *name;
+			[obj getResourceValue:&name forKey:NSURLNameKey error:nil];
+			if ([name characterAtIndex:0] == '.')	return NO;	// exclude .files
+			return YES;
+		}];
+		return [array objectsAtIndexes:unDotted];
+	}
 	return array;
 }
 - (BOOL)showHidden {
@@ -127,10 +147,9 @@ static NSArray *properties = nil;
     [_subDirectories sortUsingDescriptors:dirSortDescriptor];
     return YES;
 }
-// Create File and SubDirectory detail from an array of URLs
-- (void)setFileAndDirDetails:(NSArray *)array {
+- (void)setFileAndDirDetails:(NSArray *)arrayUrl {
 	// dirs is index set which contains Directories
-	NSIndexSet *dirs = [array indexesOfObjectsPassingTest:^(id obj, NSUInteger index, BOOL *stop) {
+	NSIndexSet *dirs = [arrayUrl indexesOfObjectsPassingTest:^(id obj, NSUInteger index, BOOL *stop) {
         id value = nil;
         [obj getResourceValue:&value forKey:NSURLIsPackageKey error:nil];
         if ([value boolValue])	return NO;	// exclude Packages
@@ -139,13 +158,13 @@ static NSArray *properties = nil;
         // Check Alias (including Symbolic Links) to determine if these target Directories
         [obj getResourceValue:&value forKey:NSURLIsAliasFileKey error:nil];
         if ([value boolValue])
-			return isAliasFolder([array objectAtIndex:index]);
+			return isAliasFolder([arrayUrl objectAtIndex:index]);
         return NO;
 	}];
 
 	// create array of Files "fileArray" by removing dirs from array
 	NSMutableArray *fileArray = [NSMutableArray new];
-	[fileArray setArray:array];
+	[fileArray setArray:arrayUrl];
 
 	if([dirs count]) {
 		[fileArray removeObjectsAtIndexes:dirs];	// remove dirs from fileArray, leaving Files
@@ -156,7 +175,7 @@ static NSArray *properties = nil;
 		NSUInteger index = [dirs firstIndex];
 		while(index != NSNotFound) {
 			DirectoryItem *newSubDir = [[DirectoryItem alloc]
-										initWithPath:[array objectAtIndex:index]
+										initWithPath:[arrayUrl objectAtIndex:index]
 										parent:self];
 			[_subDirectories addObject:newSubDir];
 			index=[dirs indexGreaterThanIndex: index];
@@ -192,8 +211,10 @@ static NSArray *properties = nil;
 		if (_files == nil)  _files = [[NSMutableArray alloc] initWithCapacity:1];   // allocate empty array for NSArrayController
     }
 }
-// copy subDirectories & files from linked entry
-// If not found loads target
+/*! @brief	This (private) method copies subDirectories & files from linked entry.
+ @discussion	Called for Symlink and Alias. If not found loads target.
+ @param	linkPath	directory path
+ */
 - (void)copyDirContent:(NSString *)linkPath {
 	if (linkPath) {
 		DirectoryItem *loadedPath = [self loadPath:linkPath];
@@ -210,34 +231,28 @@ static NSArray *properties = nil;
 	}
 }
 
-// This routine populates all the subdirectories and files in a directory
-// If alias or symbolic link copies target subdirectories and files (and loads if necessary)
 - (void)loadSubDirectories {
 	NSFileManager *fileManager = [NSFileManager new];
 	NSString *fPath = [self fullPath];
-	BOOL isDir, valid;
+	BOOL isDir;
 	NSError *error = nil;
 
-	valid = [fileManager fileExistsAtPath:fPath isDirectory:&isDir];
-	if (valid && isDir) {
-		// array is contents of Directory
-		NSArray *array = [self readDirectory:fPath error:&error];
-		if (array == nil) {
-			if ([error code] == NSFileReadNoPermissionError) {
-				_subDirectories = leafNode;
+	if ([fileManager fileExistsAtPath:fPath isDirectory:&isDir]) {
+		if (isDir) {
+			// arrayUrl is contents of Directory
+			NSArray *arrayUrl = [self readDirectory:fPath error:&error];
+			if (arrayUrl) {
+				[self setFileAndDirDetails:arrayUrl];
 				return;
 			}
+			if ([error code] == NSFileReadNoPermissionError) {
+				_subDirectories = leafNode;
+				return;	// User does not have permission to read this directory
+			}
 			// This is probably a symbolic link
-			[self copyDirContent:getTarget(fPath)];
-			return;
 		}
-		[self setFileAndDirDetails:array];
-		return;
-	}
-	if (valid && !isDir) {
-		// Resolve alias
-		[self copyDirContent:getTarget(fPath)];
-		return;
+			[self copyDirContent:getTarget(fPath)];	// Get target of Alias/symlink
+			return;
 	}
 	// We should never reach this point (error excepted)
     NSLog(@"Empty? %@ ", fPath);
@@ -254,7 +269,6 @@ static NSArray *properties = nil;
 	return self;
 }
 
-// Read directory contents and add/delete/update files and subDirs
 - (void)updateDirectory {
 	NSError *error = nil;
 	NSString *fPath = [self fullPath];
@@ -380,7 +394,7 @@ static NSArray *properties = nil;
 }
 
 #pragma mark - Utility Methods
-// look for dirName in subDirectories
+/*! @internal */
 - (DirectoryItem *)findDir:(NSString *)dirName {
 	for (DirectoryItem *element in _subDirectories) {
 		if ([[element relativePath] compare:dirName options:NSCaseInsensitiveSearch] == NSOrderedSame) {
@@ -390,8 +404,6 @@ static NSArray *properties = nil;
 	return nil;
 }
 
-// find a Directory path in existing tree
-// path is a partial path e.g. VOLUME/subdir or /Users to match DirectoryItem
 - (DirectoryItem *)findPathInDir:(NSString *)path {
 	NSArray *pathComponents = [path pathComponents];
 	NSUInteger index;
@@ -459,18 +471,14 @@ static NSArray *properties = nil;
 	return nil;	// Base does not Match
 }
 
-// load (or find) a path into existing tree; return nil on failure
-// path is a partial path e.g. VOLUME/subdir or /Users to match DirectoryItem
 - (DirectoryItem *)loadPath:(NSString *)path {
 	return [self loadPath:path expandHidden:NO];
 }
 
 #pragma mark - Key Value Properties
-// Returns the array of subDirectories
-// Loads subDirectories if not already loaded
 - (NSArray *)subDirectories {
     if(_subDirectories == nil)
-		[self loadSubDirectories];
+		[self loadSubDirectories];	//load subDirectories if not already loaded
     return _subDirectories;
 }
 - (DirectoryItem *)directoryAtIndex:(NSUInteger)n {
@@ -486,6 +494,13 @@ static NSArray *properties = nil;
 		totalSize += [file.fileSize unsignedLongValue];
 	}
     return  totalSize;
+}
+// !!!:	Does not expand Alias (in progress)
+- (BOOL)isDirectoryExpandable {
+	if(_subDirectories) {	// already loaded; check if subDirectories exist
+		return (_subDirectories == leafNode ? NO : [_subDirectories count]>0);
+	}
+	return [[self subDirectories] count]>0;	// Log Directory
 }
 
 @end

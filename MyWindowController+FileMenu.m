@@ -38,6 +38,9 @@
 - (IBAction)moveTaggedToTrash:(id)sender {
 	[currentTvc moveTaggedToTrash];
 }
+- (IBAction)deleteTagged:(id)sender {
+	[currentTvc deleteTagged];
+}
 - (IBAction)putBack:(id)sender {
 // This is a dummy so validateMenuItem: will populate the putBackMenu
 }
@@ -59,6 +62,12 @@
 - (IBAction)compareFile:(id)sender {
 	[currentTvc compareFile];
 }
+- (IBAction)editFile:(id)sender {
+	[currentTvc editFile];
+}
+- (IBAction)editTaggedFiles:(id)sender {
+	[currentTvc editTaggedFiles];
+}
 
 - (IBAction)showFilesInBranch:(id)sender {	//?
 	[currentTvc showAllFiles:NO tagged:NO];
@@ -68,6 +77,10 @@
 }
 - (IBAction)renameTaggedFilesTo:(id)sender {
 	[currentTvc renameTaggedFilesTo];
+}
+
+- (IBAction)batchForTaggedFiles:(id)sender {
+	[currentTvc batchForTaggedFiles];
 }
 
 

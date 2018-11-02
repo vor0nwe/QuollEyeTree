@@ -16,6 +16,7 @@
 @implementation PreferencesController
 
 NSArray *sortColumns;
+
 - (IBAction)sortField:(id)sender {
 	[[NSUserDefaults standardUserDefaults]
 	 setObject:[sortColumns objectAtIndex:[[sender selectedCell] tag]]
@@ -49,8 +50,16 @@ NSArray *sortColumns;
 - (IBAction)percentageSplit:(id)sender {
 	[[NSUserDefaults standardUserDefaults]
 	 setFloat:[self.percentage floatValue]
-	 forKey:PREF_SPLIT_PERCENTAGE];
+	 forKey:[[[(QuollEyeTreeAppDelegate *)[NSApp delegate] myWindowController] currentTvc] sidebyside]
+			 ? PREF_SPLIT_PERCENTAGE_H : PREF_SPLIT_PERCENTAGE ];
 }
+- (IBAction)splitAppearance:(id)sender {
+	NSLog(@"splitAppearance %ld", (long)[sender selectedRow]);
+	[[NSUserDefaults standardUserDefaults]
+	 setBool:[sender selectedRow]
+	 forKey:PREF_SPLIT_ORIENTATION ];
+}
+
 #pragma mark Columns
 - (IBAction)defaultColumns:(id)sender {
     [[NSUserDefaults standardUserDefaults] removeObjectForKey:PREF_FILE_COLUMN_WIDTH];
@@ -61,7 +70,7 @@ NSArray *sortColumns;
     [[NSUserDefaults standardUserDefaults] removeObjectForKey:PREF_DIR_COLUMN_ORDER];
 }
 - (IBAction)saveColumns:(id)sender {
-	[[[[NSApp delegate] myWindowController] currentTvc] saveTableColumns];
+	[[[(QuollEyeTreeAppDelegate *)[NSApp delegate] myWindowController] currentTvc] saveTableColumns];	// Xcode 6.1 error
 }
 #pragma mark Date Format
 - (void)showDate {
@@ -132,6 +141,12 @@ NSArray *sortColumns;
 	 setObject:[self.compareProgram stringValue]
 	 forKey:PREF_COMPARE_COMMAND];
 }
+- (IBAction)editCmdSelected:(id)sender {
+	[[NSUserDefaults standardUserDefaults]
+	 setObject:[self.editProgram stringValue]
+	 forKey:PREF_EDIT_COMMAND];
+}
+
 #pragma mark -
 - (void)awakeFromNib {
 	sortColumns = [NSArray arrayWithObjects:COLUMNID_NAME, COLUMNID_SIZE, COLUMNID_DATE, nil];
@@ -141,7 +156,8 @@ NSArray *sortColumns;
 	[self.iconFile setState:[[NSUserDefaults standardUserDefaults]boolForKey:PREF_FILE_ICON]];
 	[self.hide setState:[[NSUserDefaults standardUserDefaults]boolForKey:PREF_HIDDEN_FILES]];
 	[self.refreshDirs setState:[[NSUserDefaults standardUserDefaults]boolForKey:PREF_AUTOMATIC_REFRESH]];
-	[self.percentage setFloatValue:[[NSUserDefaults standardUserDefaults]floatForKey:PREF_SPLIT_PERCENTAGE]];
+	[self.percentage setFloatValue:[[NSUserDefaults standardUserDefaults]floatForKey:[[[(QuollEyeTreeAppDelegate *)[NSApp delegate] myWindowController] currentTvc] sidebyside] ? PREF_SPLIT_PERCENTAGE_H : PREF_SPLIT_PERCENTAGE] ];
+	[self.splitType selectCellAtRow:[[NSUserDefaults standardUserDefaults]boolForKey:PREF_SPLIT_ORIENTATION] column:0];
     [self.defaultPathButton bind:@"popupPath"
 						toObject:[NSUserDefaultsController sharedUserDefaultsController]
 					 withKeyPath:@"values.defaultDirectory"
@@ -170,6 +186,7 @@ NSArray *sortColumns;
 		[self.compareProgram addItemWithObjectValue:cmd];
 		[self.compareProgram selectItemWithObjectValue:cmd];
 	}
+	[self.editProgram setStringValue:[[NSUserDefaults standardUserDefaults] stringForKey:PREF_EDIT_COMMAND] ];
 }
 
 @end

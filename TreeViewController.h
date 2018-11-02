@@ -12,9 +12,26 @@
 
 @class DirectoryItem;
 @class CopyPanelController;
+@class BatchPanelController;
 @class RenamePanelController;
 @class TextViewerController;
 @class OpenWith;
+/*!
+ @indexgroup ViewController
+*/
+
+/*!
+ @class TreeViewController
+ @brief The TreeViewController class
+
+ @discussion    This class is the QuollEyeTree ViewController which controls:-
+
+  Directory Window - a tree display of Directories.
+
+  File Window - a list of Files in the currently selected Directory.
+ 
+  Status Bar - the path of the current directory and file count.
+ */
 
 @interface TreeViewController : NSViewController <NSMenuDelegate, MyOutlineViewDelegate> {
 	DirectoryItem *__unsafe_unretained dataRoot;
@@ -30,6 +47,7 @@
 	CopyPanelController *copyPanel;
 	RenamePanelController *renamePanel;
     TextViewerController *textViewer;
+	BatchPanelController *batchPanel;
     OpenWith *openWithClass;    // need to hang on to class for ARC
     NSArray *filesToView;
     NSUInteger currentFileToView;
@@ -46,6 +64,7 @@
 @property (unsafe_unretained) IBOutlet NSArrayController *arrayController;
 @property (unsafe_unretained) IBOutlet MyOutlineView *dirTree;
 @property (unsafe_unretained) IBOutlet NSTableView *fileList;
+@property (unsafe_unretained) BOOL sidebyside;
 @property (unsafe_unretained) IBOutlet NSPathControl *currentPath;
 @property (unsafe_unretained) IBOutlet NSProgressIndicator *progress;
 @property (unsafe_unretained) IBOutlet NSTextField *statusMessage;
@@ -54,6 +73,7 @@
 @property (unsafe_unretained) NSMutableArray *filesInDir;
 @property (unsafe_unretained) DirectoryItem *selectedDir;    // item to display
 @property (copy) NSURL *currDir;    // binding to NSPathControl *currentPath
+@property (unsafe_unretained) NSString *renameMask;
 
 - (NSString *)getTargetFile;
 - (NSString *)rootDirName;
@@ -65,11 +85,12 @@
 - (DirectoryItem *)treeRootNode;
 - (BOOL)shouldTerminate;
 - (void)refreshCounters;
-	
+
 // Toolbar Actions
 - (void)segControlClicked:(id)sender;
 - (void)togglePreviewPanel;
 - (void)toggleShowTagged;
+- (void)toggleView;
 // PreferencesController Actions
 - (void)saveTableColumns;
 @end

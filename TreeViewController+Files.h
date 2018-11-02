@@ -21,13 +21,17 @@
 
 - (void)moveToTrash;
 - (void)moveTaggedToTrash;
+- (void)deleteTagged;
 - (void)copyFileTo;
 - (void)moveFileTo;
 - (void)copyTaggedFilesTo;
 - (void)moveTaggedFilesTo;
-- (void)renameTaggedFilesTo;
 - (void)renameFile;
+- (void)renameTaggedFilesTo;
 - (void)compareFile;
+- (void)editFile;
+- (void)editTaggedFiles;
+- (void)batchForTaggedFiles;
 
 // Context Menu Actions
 - (IBAction)openFile:(id)sender;

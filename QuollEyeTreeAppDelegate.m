@@ -30,10 +30,14 @@
 							  defaultDirectory, PREF_DEFAULT_DIR,
 							  defaultDirectory, PREF_REFRESH_DIR,
 							  @"0.5", PREF_SPLIT_PERCENTAGE,
+							  @"0.5", PREF_SPLIT_PERCENTAGE_H,
+							  @"NO", PREF_SPLIT_ORIENTATION,
 							  [NSNumber numberWithInteger:ISO8601ShortStyle], PREF_DATE_FORMAT,
 							  @"NO", PREF_DATE_RELATIVE,
                               @"NO", PREF_DATE_SHOW_CREATE,
 							  DEFAULT_COMPARE_COMMAND, PREF_COMPARE_COMMAND,
+							  DEFAULT_EDIT_COMMAND, PREF_EDIT_COMMAND,
+							  @"%1", PREF_BATCH_CMD,
 							  nil];
 	[[NSUserDefaults standardUserDefaults] registerDefaults:defaults];
 
@@ -99,8 +103,8 @@
 
 #pragma mark Button Actions
 - (IBAction)openReadMe:(id)sender {
-	NSString *fullPath = [[NSBundle mainBundle] pathForResource:@"ReadMe" ofType:@"txt"];
-	[[NSWorkspace sharedWorkspace] openFile:fullPath];
+	NSString *fullReadMePath = [[NSBundle mainBundle] pathForResource:@"ReadMe" ofType:@"txt"];
+	[[NSWorkspace sharedWorkspace] openFile:fullReadMePath];
 }
 
 - (IBAction)openPreferences:(id)sender {
@@ -149,6 +153,9 @@
 }
 - (IBAction)toggleSidebar:(id)sender {
 	[myWindowController toggleSidebar:sender];
+}
+- (IBAction)toggleView:(id)sender {
+	[myWindowController toggleView:sender];
 }
 
 @end

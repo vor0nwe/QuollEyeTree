@@ -32,6 +32,7 @@
 
 - (IBAction)moveToTrash:(id)sender;
 - (IBAction)moveTaggedToTrash:(id)sender;
+- (IBAction)deleteTagged:(id)sender;
 - (IBAction)putBack:(id)sender;
 - (IBAction)copyFileTo:(id)sender;
 - (IBAction)moveFileTo:(id)sender;
@@ -40,6 +41,9 @@
 - (IBAction)moveTaggedFilesTo:(id)sender;
 - (IBAction)renameTaggedFilesTo:(id)sender;
 - (IBAction)compareFile:(id)sender;
+- (IBAction)editFile:(id)sender;
+- (IBAction)editTaggedFiles:(id)sender;
+- (IBAction)batchForTaggedFiles:(id)sender;
 // Dir Context & Menu Actions
 - (IBAction)openDirectory:(id)sender;
 - (IBAction)copyDir:(id)sender;

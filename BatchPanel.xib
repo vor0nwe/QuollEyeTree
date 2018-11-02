@@ -4,74 +4,77 @@
         <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="10116"/>
     </dependencies>
     <objects>
-        <customObject id="-2" userLabel="File's Owner" customClass="CopyPanelController">
+        <customObject id="-2" userLabel="File's Owner" customClass="BatchPanelController">
             <connections>
-                <outlet property="createDirectories" destination="32" id="34"/>
+                <outlet property="batchArgs" destination="8" id="39"/>
+                <outlet property="batchFileName" destination="10" id="40"/>
                 <outlet property="destComboBox" destination="6" id="21"/>
-                <outlet property="name" destination="8" id="22"/>
-                <outlet property="replaceExisting" destination="28" id="31"/>
-                <outlet property="source" destination="10" id="23"/>
+                <outlet property="makeNameUnique" destination="32" id="37"/>
+                <outlet property="replaceBatchFile" destination="28" id="38"/>
                 <outlet property="window" destination="1" id="20"/>
             </connections>
         </customObject>
         <customObject id="-1" userLabel="First Responder" customClass="FirstResponder"/>
         <customObject id="-3" userLabel="Application" customClass="NSObject"/>
-        <window title="Copy" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" hidesOnDeactivate="YES" oneShot="NO" animationBehavior="default" id="1" customClass="NSPanel">
+        <window title="Batch" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" hidesOnDeactivate="YES" oneShot="NO" animationBehavior="default" id="1" customClass="NSPanel">
             <windowStyleMask key="styleMask" titled="YES" resizable="YES" documentModal="YES"/>
             <windowPositionMask key="initialPositionMask" leftStrut="YES" rightStrut="YES" topStrut="YES" bottomStrut="YES"/>
-            <rect key="contentRect" x="140" y="299" width="480" height="152"/>
-            <rect key="screenRect" x="0.0" y="0.0" width="1280" height="778"/>
+            <rect key="contentRect" x="140" y="299" width="480" height="150"/>
+            <rect key="screenRect" x="0.0" y="0.0" width="1280" height="777"/>
             <view key="contentView" id="2">
-                <rect key="frame" x="0.0" y="0.0" width="480" height="152"/>
+                <rect key="frame" x="0.0" y="0.0" width="480" height="150"/>
                 <autoresizingMask key="autoresizingMask"/>
                 <subviews>
-                    <textField verticalHuggingPriority="750" id="11">
-                        <rect key="frame" x="17" y="115" width="38" height="17"/>
+                    <textField verticalHuggingPriority="750" id="11" userLabel="Batch">
+                        <rect key="frame" x="17" y="115" width="68" height="17"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                        <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="From" id="12">
+                        <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="BatchFile" id="12">
                             <font key="font" metaFont="system"/>
                             <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
                             <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                         </textFieldCell>
                     </textField>
-                    <textField verticalHuggingPriority="750" id="10">
-                        <rect key="frame" x="60" y="112" width="400" height="22"/>
+                    <textField verticalHuggingPriority="750" id="10" userLabel="BatchName">
+                        <rect key="frame" x="91" y="112" width="369" height="22"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" flexibleMinY="YES"/>
-                        <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" allowsUndo="NO" sendsActionOnEndEditing="YES" state="on" borderStyle="bezel" title="Source" drawsBackground="YES" id="13">
+                        <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" state="on" borderStyle="bezel" title="batch" drawsBackground="YES" usesSingleLineMode="YES" id="13">
                             <font key="font" metaFont="system"/>
                             <color key="textColor" name="textColor" catalog="System" colorSpace="catalog"/>
                             <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
                         </textFieldCell>
                     </textField>
-                    <textField verticalHuggingPriority="750" id="7">
-                        <rect key="frame" x="17" y="83" width="38" height="17"/>
+                    <textField verticalHuggingPriority="750" id="7" userLabel="command">
+                        <rect key="frame" x="17" y="83" width="68" height="17"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                        <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" alignment="left" title="as" id="16">
+                        <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Command" id="16">
                             <font key="font" metaFont="system"/>
                             <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
                             <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                         </textFieldCell>
                     </textField>
                     <textField verticalHuggingPriority="750" id="8">
-                        <rect key="frame" x="60" y="81" width="323" height="22"/>
+                        <rect key="frame" x="91" y="80" width="369" height="22"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" flexibleMinY="YES"/>
-                        <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" state="on" borderStyle="bezel" title="FileName" drawsBackground="YES" id="15">
+                        <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" state="on" borderStyle="bezel" drawsBackground="YES" usesSingleLineMode="YES" id="15">
                             <font key="font" metaFont="system"/>
                             <color key="textColor" name="textColor" catalog="System" colorSpace="catalog"/>
                             <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
                         </textFieldCell>
+                        <connections>
+                            <action selector="editCmdSelected:" target="-2" id="Ot0-nQ-2mR"/>
+                        </connections>
                     </textField>
                     <textField verticalHuggingPriority="750" id="9">
-                        <rect key="frame" x="17" y="53" width="38" height="17"/>
+                        <rect key="frame" x="17" y="53" width="43" height="17"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                        <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="To" id="14">
+                        <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Target" id="14">
                             <font key="font" metaFont="system"/>
                             <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
                             <color key="backgroundColor" name="controlColor" catalog="System" colorSpace="catalog"/>
                         </textFieldCell>
                     </textField>
                     <comboBox verticalHuggingPriority="750" id="6">
-                        <rect key="frame" x="60" y="47" width="403" height="26"/>
+                        <rect key="frame" x="60" y="46" width="403" height="26"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" flexibleMinY="YES"/>
                         <comboBoxCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" borderStyle="bezel" drawsBackground="YES" usesSingleLineMode="YES" completes="NO" numberOfVisibleItems="5" id="17">
                             <font key="font" metaFont="system"/>
@@ -90,7 +93,7 @@ Gw
 </string>
                         </buttonCell>
                         <connections>
-                            <action selector="cancelCopy:" target="-2" id="24"/>
+                            <action selector="cancelBatch:" target="-2" id="35"/>
                         </connections>
                     </button>
                     <button verticalHuggingPriority="750" id="5">
@@ -104,13 +107,13 @@ DQ
 </string>
                         </buttonCell>
                         <connections>
-                            <action selector="performCopy:" target="-2" id="25"/>
+                            <action selector="performBatch:" target="-2" id="36"/>
                         </connections>
                     </button>
-                    <button id="28">
+                    <button id="28" userLabel="Replace">
                         <rect key="frame" x="58" y="28" width="136" height="18"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                        <buttonCell key="cell" type="check" title="Replace Existing" bezelStyle="regularSquare" imagePosition="left" alignment="left" inset="2" id="29">
+                        <buttonCell key="cell" type="check" title="Replace File" bezelStyle="regularSquare" imagePosition="left" alignment="left" enabled="NO" inset="2" id="29" userLabel="Replace">
                             <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                             <font key="font" metaFont="system"/>
                         </buttonCell>
@@ -118,7 +121,7 @@ DQ
                     <button id="32">
                         <rect key="frame" x="58" y="8" width="136" height="18"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
-                        <buttonCell key="cell" type="check" title="Create Directories" bezelStyle="regularSquare" imagePosition="left" alignment="left" inset="2" id="33">
+                        <buttonCell key="cell" type="check" title="Unique Name" bezelStyle="regularSquare" imagePosition="left" alignment="left" enabled="NO" inset="2" id="33" userLabel="Unique">
                             <behavior key="behavior" changeContents="YES" doesNotDimImage="YES" lightByContents="YES"/>
                             <font key="font" metaFont="system"/>
                         </buttonCell>
@@ -128,7 +131,7 @@ DQ
             <connections>
                 <outlet property="delegate" destination="-2" id="27"/>
             </connections>
-            <point key="canvasLocation" x="229" y="-22"/>
+            <point key="canvasLocation" x="143" y="59"/>
         </window>
     </objects>
 </document>

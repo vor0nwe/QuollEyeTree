@@ -25,6 +25,7 @@
 	IBOutlet NSSearchField *filterString;
     IBOutlet NSProgressIndicator *refresh;
 	TreeViewController *currentTvc;
+	TreeViewController *previousTvc;
     SidebarViewController *sidebarController;
     QLPreviewPanel *previewPanel;
     NSArray *panelData;
@@ -32,14 +33,14 @@
     FSEventStreamRef stream;
 	NSMapTable *viewMap;    // relationsship between View and Tab
     NSInteger pauseCount;
-	IBOutlet SFTabView *__unsafe_unretained tabViewBar;
-    IBOutlet NSDrawer *__unsafe_unretained sidebarDrawer;
+//	IBOutlet SFTabView *__unsafe_unretained tabViewBar;
+//    IBOutlet NSDrawer *__unsafe_unretained sidebarDrawer;
 }
 
 @property (assign) IBOutlet NSView *viewContainer;
 @property (readonly) TreeViewController *currentTvc;
-@property (unsafe_unretained, readonly) SFTabView *tabViewBar;
-@property (unsafe_unretained, readonly) NSDrawer *sidebarDrawer;
+@property (unsafe_unretained, readonly) IBOutlet SFTabView *tabViewBar;
+@property (unsafe_unretained, readonly) IBOutlet NSDrawer *sidebarDrawer;
 
 - (NSArray *)tvcInTabs;
 - (NSInteger)currentTab;
@@ -60,6 +61,8 @@
 - (IBAction)addNewTab:(id)sender;
 - (IBAction)removeThisTab: (id)sender;
 - (IBAction)addNewTabAt:(id)sender;
+- (IBAction)toggleView:(id)sender;
 
 - (IBAction)gotoDir:(id)sender;
+- (IBAction)goBack:(id)sender;
 @end

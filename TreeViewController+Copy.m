@@ -5,6 +5,8 @@
 //  Created by Ian Binnie on 20/12/11.
 //  Copyright 2011-2013 Ian Binnie. All rights reserved.
 //
+#include <stdio.h>
+#include <sys/stat.h>
 
 #import "TreeViewController+Copy.h"
 #import "MyWindowController.h"
@@ -13,9 +15,14 @@
 #import "FileItem.h"
 #import "CopyPanelController.h"
 #import "RenamePanelController.h"
+#import "BatchPanelController.h"
 #import "NSString+Rename.h"
+#import "volumeForPath.h"
 @interface TreeViewController(Dirs)
 - (void)updateSelectedDir;
+@end
+@interface TreeViewController(Files)	//2015-07-09
+- (NSArray *)taggedFiles;
 @end
 
 static void removeItemForPath(NSString *path) {
@@ -74,7 +81,8 @@ static BOOL createTargetDir(NSString *targetDir, NSFileManager *fileManager) {
 - (NSOperationQueue *)copyQueue {
     if(queue == NULL) {
 		queue = [NSOperationQueue new];
-		[queue setMaxConcurrentOperationCount:10];
+//		[queue setMaxConcurrentOperationCount:10];
+		[queue setMaxConcurrentOperationCount:3];
 	}
 	return queue;
 }
@@ -146,6 +154,8 @@ static BOOL createTargetDir(NSString *targetDir, NSFileManager *fileManager) {
 	}
 	return dest;
 }
+/*! @brief This method sets target directories in NSComboBox to directories in tabs
+ */
 - (void)initPanelDest:(id)panel {
 	NSArray *dest = [self dirsInTabs];
 	NSInteger n = [self.delegate currentTab];
@@ -169,6 +179,10 @@ static BOOL createTargetDir(NSString *targetDir, NSFileManager *fileManager) {
 	[copyPanel setFrom:[NSString stringWithFormat:@"%ld tagged Files", [objects count]]];
 	[copyPanel setFilename:@"*.*"];
 	[self initPanelDest:copyPanel];
+}
+- (void)initTaggedBatchPanel:(NSArray *)objects {
+	batchPanel = [BatchPanelController new];
+	[self initPanelDest:batchPanel];
 }
 
 #pragma mark - Operations to execute after completion of queue
@@ -336,6 +350,40 @@ static BOOL createTargetDir(NSString *targetDir, NSFileManager *fileManager) {
 	}
     copyPanel = nil;
 }
+//%1 - the file's path and name
+//%2 - the file's volume *
+//%3 - the file's last path component (name + extension) *
+//%4 - the file's name
+//%5 - the file's extension
+- (void)batchForTagged:(NSArray *)objectsForBatch {
+	[self initTaggedBatchPanel:objectsForBatch];
+	if ([batchPanel runModal] == NSOKButton) {
+		NSFileManager *fileManager = [NSFileManager new];
+		const char *filename = [fileManager fileSystemRepresentationWithPath:[batchPanel.targetDirectory stringByAppendingPathComponent:batchPanel.batchFileName.stringValue]];
+		FILE *fp = fopen(filename, "w");
+
+		NSString *batchArgs =  batchPanel.batchArgs.stringValue;
+		for (FileItem *node in objectsForBatch) {
+			NSString *path = node.fullPath;
+			NSString *volume = volumeForPath(path);
+			if(volume.length > 1) volume = [volume stringByAppendingString:@"/"];	// Ensure Volume ends in /
+			NSString *relativePath = node.relativePath;
+			NSString *filename = [relativePath stringByDeletingPathExtension];
+			NSString *ext = relativePath.pathExtension;
+			NSString *batchCmd = batchArgs;
+			batchCmd = [batchCmd stringByReplacingOccurrencesOfString:@"%1" withString:path];
+			batchCmd = [batchCmd stringByReplacingOccurrencesOfString:@"%2" withString:volume];
+			batchCmd = [batchCmd stringByReplacingOccurrencesOfString:@"%3" withString:relativePath];
+			batchCmd = [batchCmd stringByReplacingOccurrencesOfString:@"%4" withString:filename];
+			batchCmd = [batchCmd stringByReplacingOccurrencesOfString:@"%5" withString:ext];
+			fprintf(fp, "%s\n", batchCmd.UTF8String);
+//			fprintf(fp, "%s,\t%s,\t%s,\t%s,\t%s\n", path.fileSystemRepresentation, volume.UTF8String, relativePath. UTF8String, filename.UTF8String, ext.UTF8String);
+		}
+		fclose(fp);
+		chmod(filename, 0774);
+	}
+	 batchPanel = nil;
+}
 - (void)pasteTo:(DirectoryItem *)targetDir {
 	NSPasteboard *pasteboard = [NSPasteboard generalPasteboard];
 	NSArray *classes = [NSArray arrayWithObject:[NSURL class]];
@@ -404,8 +452,9 @@ static BOOL createTargetDir(NSString *targetDir, NSFileManager *fileManager) {
     renamePanel = [RenamePanelController new];
 	[renamePanel setTitle:@"Rename Tagged Files"];
 	[renamePanel setFrom:[NSString stringWithFormat:@"%ld tagged Files", [objects count]]];
-	[renamePanel setFilename:@"*.*"];
+	[renamePanel setFilename:self.renameMask];
 	if ([renamePanel runModal] == NSOKButton) {
+		[self setRenameMask:[renamePanel filename]];	// Update saved mask
 		[self.delegate treeViewController:self pauseRefresh:YES];
 		for (FileItem *node in objects) {
 			[self renameSingle:node];
